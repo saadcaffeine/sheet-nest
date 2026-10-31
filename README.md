@@ -125,7 +125,7 @@ Sheet Nest has **no runtime dependencies or third-party packages**. It uses only
 - **Web platform docs:** [MDN, Service Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) and [MDN, Web app manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest).
 - **Sheet presets:** typical working areas of common hobby laser classes and standard stock sizes. Always check your own machine's bed size.
 
-Built by [@saadcaffeine](https://github.com/saadcaffeine) with the [Edible Makerspace](https://linktr.ee/ediblemakerspace) and SalvageGarden makerspace communities, with help from Claude (Anthropic).
+Built by [@saadcaffeine](https://github.com/saadcaffeine) with the [Edible Makerspace](https://linktr.ee/ediblemakerspace) and [SalvageGarden makerspace](https://salvage.garden/) communities, with help from Claude (Anthropic).
 
 ---
 
