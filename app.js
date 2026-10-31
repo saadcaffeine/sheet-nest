@@ -3,18 +3,18 @@
   'use strict';
 
   var PRESETS = [
-    { k: 'a4', label: 'A4', w: 297, h: 210 },
-    { k: 'a3', label: 'A3', w: 420, h: 297 },
-    { k: 'a2', label: 'A2', w: 594, h: 420 },
-    { k: 'k40', label: 'K40 bed', w: 300, h: 200 },
-    { k: 'd400', label: 'Diode', w: 400, h: 400 },
-    { k: 'd500', label: 'Desktop', w: 500, h: 300 },
-    { k: 'c600', label: 'CO₂ small', w: 600, h: 400 },
-    { k: 'c700', label: 'CO₂ mid', w: 700, h: 500 },
-    { k: 'c900', label: 'CO₂ 9060', w: 900, h: 600 },
-    { k: 'c1300', label: 'CO₂ 1390', w: 1300, h: 900 },
-    { k: 'ft24', label: '2×4 ft', w: 1220, h: 610 },
-    { k: 'ft48', label: '4×8 ft', w: 2440, h: 1220 }
+    { k: 'a4', c: '#2F7FD8', label: 'A4', w: 297, h: 210 },
+    { k: 'a3', c: '#6A5ACD', label: 'A3', w: 420, h: 297 },
+    { k: 'a2', c: '#9B59B6', label: 'A2', w: 594, h: 420 },
+    { k: 'k40', c: '#E0457B', label: 'K40 bed', w: 300, h: 200 },
+    { k: 'd400', c: '#E4572E', label: 'Diode', w: 400, h: 400 },
+    { k: 'd500', c: '#E08E0B', label: 'Desktop', w: 500, h: 300 },
+    { k: 'c600', c: '#7CB518', label: 'CO₂ small', w: 600, h: 400 },
+    { k: 'c700', c: '#2BA84A', label: 'CO₂ mid', w: 700, h: 500 },
+    { k: 'c900', c: '#16A39A', label: 'CO₂ 9060', w: 900, h: 600 },
+    { k: 'c1300', c: '#1696D2', label: 'CO₂ 1390', w: 1300, h: 900 },
+    { k: 'ft24', c: '#A0714F', label: '2×4 ft', w: 1220, h: 610 },
+    { k: 'ft48', c: '#6F8399', label: '4×8 ft', w: 2440, h: 1220 }
   ];
   var PALETTE = ['#1D9E75', '#378ADD', '#D85A30', '#7F77DD', '#BA7517', '#D4537E', '#639922', '#888780'];
   var MODES = { offcut: 'Reusable offcuts', spread: 'Even spread', waste: 'Min waste' };
@@ -166,17 +166,33 @@
     renderSide(); renderSheets(); renderBar();
   }
 
-  function miniRect(w, h) {
-    var sc = Math.min(54 / w, 34 / h), rw = w * sc, rh = h * sc;
-    return '<svg viewBox="0 0 58 38" aria-hidden="true"><rect x="' + (29 - rw / 2) + '" y="' + (19 - rh / 2) + '" width="' + rw + '" height="' + rh +
-      '" rx="1.5" fill="var(--sheet)" stroke="var(--sheet-line)"/></svg>';
+  var CUSTOM_COLOR = '#8A877E';
+  function sheetColor(w, h) { var p = presetFor(w, h); return p ? p.c : CUSTOM_COLOR; }
+  // Sheet icon: true aspect ratio, drawn bigger for bigger sheets (log scale
+  // from A4 to 4x8 ft), tinted in the preset's colour, with the origin corner marked.
+  function sheetIcon(w, h, color, small) {
+    var BW = small ? 30 : 58, BH = small ? 22 : 38, pad = 2;
+    var lo = Math.log(297 * 210), hi = Math.log(2440 * 1220);
+    var t = Math.max(0, Math.min(1, (Math.log(Math.max(1, w * h)) - lo) / (hi - lo)));
+    var k = (small ? 0.72 : 0.5) + (small ? 0.28 : 0.5) * t;
+    var sc = Math.min((BW - 2 * pad) / w, (BH - 2 * pad) / h) * k, rw = w * sc, rh = h * sc;
+    var x = (BW - rw) / 2, y = (BH - rh) / 2, g = '';
+    if (!small) {
+      var step = Math.max(rw, rh) / 4;
+      for (var gx = x + step; gx < x + rw - 1; gx += step) g += '<line x1="' + gx + '" y1="' + y + '" x2="' + gx + '" y2="' + (y + rh) + '"/>';
+      for (var gy = y + step; gy < y + rh - 1; gy += step) g += '<line x1="' + x + '" y1="' + gy + '" x2="' + (x + rw) + '" y2="' + gy + '"/>';
+    }
+    return '<svg viewBox="0 0 ' + BW + ' ' + BH + '" width="' + BW + '" height="' + BH + '" aria-hidden="true" class="sheet-icon">' +
+      '<rect x="' + x + '" y="' + y + '" width="' + rw + '" height="' + rh + '" rx="1.5" fill="' + color + '" fill-opacity=".16" stroke="' + color + '" stroke-width="1.6"/>' +
+      (g ? '<g stroke="' + color + '" stroke-opacity=".28" stroke-width=".6">' + g + '</g>' : '') +
+      '<circle cx="' + x + '" cy="' + (y + rh) + '" r="' + (small ? 1.6 : 2) + '" fill="' + color + '"/></svg>';
   }
 
   function renderSide() {
     var presetBtns = PRESETS.map(function (p) {
       var on = draft.k === p.k;
       return '<button class="preset' + (on ? ' on' : '') + '" data-act="preset" data-k="' + p.k + '" aria-pressed="' + on + '">' +
-        miniRect(p.w, p.h) + '<b>' + esc(p.label) + '</b><span>' + p.w + '×' + p.h + '</span></button>';
+        sheetIcon(p.w, p.h, p.c) + '<b style="color:' + p.c + '">' + esc(p.label) + '</b><span>' + p.w + '×' + p.h + '</span></button>';
     }).join('');
     var sheetOpts = '<option value="auto">First sheet with space</option>' + S.sheets.map(function (sh) {
       return '<option value="' + sh.id + '"' + (String(form.target) === String(sh.id) ? ' selected' : '') + '>' + esc(sheetName(sh)) + ' (' + sh.w + '×' + sh.h + ')</option>';
@@ -187,7 +203,7 @@
       '<div class="row"><label>Width (mm)<input type="number" min="1" step="any" data-draft="w" value="' + draft.w + '"></label>' +
       '<button data-act="draft-swap" title="Swap width and height" aria-label="Swap width and height">⇄</button>' +
       '<label>Height (mm)<input type="number" min="1" step="any" data-draft="h" value="' + draft.h + '"></label></div>' +
-      '<button class="primary" data-act="add-sheet" style="width:100%">+ Add ' + draft.w + ' × ' + draft.h + ' sheet</button></div>' +
+      '<button class="primary add-sheet" data-act="add-sheet">' + sheetIcon(draft.w, draft.h, sheetColor(draft.w, draft.h), true) + '<span>Add ' + draft.w + ' × ' + draft.h + ' sheet</span></button></div>' +
 
       '<div class="card"><h2>Add parts</h2>' +
       '<div class="row"><label>Name<input data-form="name" value="' + esc(form.name) + '"></label><label style="flex:0 0 70px">Qty<input type="number" min="1" max="500" step="1" data-form="qty" value="' + form.qty + '"></label></div>' +
@@ -222,16 +238,16 @@
   }
 
   function sheetSVG(sh) {
-    var W = sh.w, H = sh.h, m = sh.margin, parts = partsOn(sh), off = sh._off;
+    var W = sh.w, H = sh.h, m = sh.margin, parts = partsOn(sh), off = sh._off, col = sheetColor(W, H);
     var pad = Math.max(W, H) * 0.01, base = Math.max(W, H) / 55;
     var out = '<svg class="canvas" viewBox="' + (-pad) + ' ' + (-pad) + ' ' + (W + 2 * pad) + ' ' + (H + 2 * pad) +
       '" role="img" aria-label="' + esc(sheetName(sh)) + ' layout, ' + parts.length + ' parts">' +
       '<defs><pattern id="hatch' + sh.id + '" width="' + base + '" height="' + base + '" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
       '<line x1="0" y1="0" x2="0" y2="' + base + '" stroke="var(--off)" stroke-width="' + (base * 0.1) + '" opacity=".55"/></pattern></defs>' +
-      '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="var(--sheet)" stroke="var(--sheet-line)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>';
+      '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="var(--sheet)" stroke="' + col + '" stroke-width="2.5" vector-effect="non-scaling-stroke"/>';
     if (m > 0 && W > 2 * m && H > 2 * m) {
       out += '<rect x="' + m + '" y="' + m + '" width="' + (W - 2 * m) + '" height="' + (H - 2 * m) +
-        '" fill="none" stroke="var(--margin)" stroke-dasharray="5 4" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+        '" fill="none" stroke="' + col + '" stroke-opacity=".45" stroke-dasharray="5 4" stroke-width="1" vector-effect="non-scaling-stroke"/>';
     }
     if (off && parts.length) {
       var oy = H - off.y - off.h;
@@ -261,7 +277,7 @@
       }
       out += '</g>';
     });
-    out += '<circle cx="0" cy="' + H + '" r="' + (base * 0.28) + '" fill="var(--sel)"><title>Origin (0,0)</title></circle></svg>';
+    out += '<circle cx="0" cy="' + H + '" r="' + (base * 0.28) + '" fill="' + col + '"><title>Origin (0,0)</title></circle></svg>';
     return out;
   }
 
@@ -269,7 +285,7 @@
     var parts = partsOn(sh), used = 0;
     parts.forEach(function (p) { used += p.w * p.h; });
     var util = sh.w * sh.h ? used / (sh.w * sh.h) * 100 : 0;
-    var pre = presetFor(sh.w, sh.h);
+    var pre = presetFor(sh.w, sh.h), col = sheetColor(sh.w, sh.h);
     var opts = PRESETS.map(function (p) {
       return '<option value="' + p.k + '"' + (pre && pre.k === p.k ? ' selected' : '') + '>' + esc(p.label) + ' · ' + p.w + '×' + p.h + '</option>';
     }).join('') + '<option value="custom"' + (pre ? '' : ' selected') + '>Custom</option>';
@@ -278,7 +294,8 @@
         esc(p.name) + ' ' + fmt(fw(p)) + '×' + fmt(fh(p)) + (p.lock ? ' 🔒' : '') + '</button>';
     }).join('');
     return '<section class="card sheet" data-sheet="' + sh.id + '">' +
-      '<div class="sheet-title"><strong>' + esc(sheetName(sh)) + '</strong>' + (sh.auto ? '<span class="badge">auto-added</span>' : '') +
+      '<div class="sheet-title">' + sheetIcon(sh.w, sh.h, col, true) + '<strong style="border-bottom:3px solid ' + col + '">' + esc(sheetName(sh)) + '</strong>' +
+      '<span class="size-tag" style="color:' + col + ';border-color:' + col + '">' + (pre ? esc(pre.label) + ' · ' : '') + sh.w + '×' + sh.h + '</span>' + (sh.auto ? '<span class="badge">auto-added</span>' : '') +
       '<span class="spacer"></span>' +
       '<button class="ghost" data-act="sheet-swap" data-id="' + sh.id + '" title="Swap orientation">⇄ Rotate sheet</button>' +
       '<button class="ghost" data-act="sheet-dup" data-id="' + sh.id + '" title="Duplicate sheet with its parts">Duplicate</button>' +
