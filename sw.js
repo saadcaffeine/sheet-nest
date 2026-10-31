@@ -1,6 +1,6 @@
 /* Sheet Nest service worker: cache-first so the app works fully offline.
  * Bump VERSION whenever you change any file so returning users get the update. */
-var VERSION = 'sheetnest-v1';
+var VERSION = 'sheetnest-v2';
 var ASSETS = ['./', './index.html', './app.js', './nest.js', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', function (e) {
